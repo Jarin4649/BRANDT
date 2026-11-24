@@ -1,0 +1,6 @@
+{
+  "name": "BRANDT",
+  "description": "BRANDT Vehicle Profile, My Garage & Master Automotive Diagnostic Assistant for managing vehicles, specs, and AI diagnostics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

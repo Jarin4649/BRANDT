@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="firestore_database_id" translatable="false">ai-studio-android-motora-abb5c83d-3e78-4cd2-8989-920543fb0dd6</string>
+    <string name="recaptcha_site_key" translatable="false">6LcuISQuAAAAAPcksCVjB76ohX9zh69i3T83RMR9</string>
+</resources>

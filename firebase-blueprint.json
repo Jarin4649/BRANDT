@@ -1,0 +1,361 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated MOTORA owner profile storing preferences and primary vehicle pointer.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the vehicle owner."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Owner display name."
+        },
+        "preferredMarket": {
+          "type": "string",
+          "description": "Default market/country for vehicle registrations."
+        },
+        "preferredMileageUnit": {
+          "type": "string",
+          "enum": ["km", "mi"],
+          "description": "Preferred odometer unit."
+        },
+        "primaryVehicleId": {
+          "type": "string",
+          "description": "Document ID of the user's currently selected primary vehicle."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated creation timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated update timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "displayName", "createdAt", "updatedAt"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Registered vehicle owned by an authenticated MOTORA user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the vehicle owner."
+        },
+        "manufacturer": {
+          "type": "string",
+          "description": "Vehicle manufacturer name (e.g., Volvo, Porsche)."
+        },
+        "model": {
+          "type": "string",
+          "description": "Vehicle model name (e.g., EX30, 911)."
+        },
+        "modelYear": {
+          "type": "integer",
+          "description": "Model year between 1886 and 2028."
+        },
+        "trim": {
+          "type": "string",
+          "description": "Vehicle trim or variant designation."
+        },
+        "bodyStyle": {
+          "type": "string",
+          "enum": ["CROSSOVER", "SEDAN", "COUPE", "HATCHBACK", "SUV", "TRUCK", "WAGON"],
+          "description": "Body silhouette category for studio presentation."
+        },
+        "engineType": {
+          "type": "string",
+          "description": "Engine architecture or Unknown / Unavailable."
+        },
+        "engineDisplacement": {
+          "type": "string",
+          "description": "Optional engine displacement (e.g., 1998 cc) or N/A / Unknown."
+        },
+        "transmission": {
+          "type": "string",
+          "description": "Transmission specification or Unknown / Unavailable."
+        },
+        "fuelType": {
+          "type": "string",
+          "description": "Fuel or energy type or Unknown / Unavailable."
+        },
+        "mileage": {
+          "type": "integer",
+          "description": "Current odometer reading (>= 0)."
+        },
+        "mileageUnit": {
+          "type": "string",
+          "enum": ["km", "mi"],
+          "description": "Odometer unit."
+        },
+        "market": {
+          "type": "string",
+          "description": "Market or country of specification/registration."
+        },
+        "photoUri": {
+          "type": "string",
+          "description": "Optional primary vehicle photo URI path."
+        },
+        "anglePhotos": {
+          "type": "object",
+          "description": "Optional multi-angle studio photos keyed by FRONT, SIDE_LEFT, REAR, SIDE_RIGHT."
+        },
+        "aiInspectionSummary": {
+          "type": "string",
+          "description": "Optional Gemini Vision multi-angle exterior summary clearly labeled as AI-assisted."
+        },
+        "primary": {
+          "type": "boolean",
+          "description": "Whether this vehicle is currently selected as the primary garage vehicle."
+        },
+        "specSource": {
+          "type": "string",
+          "enum": ["USER_ENTERED", "DEMO_CATALOG_PREFILL", "AI_VISION_PREFILL"],
+          "description": "Provenance of the vehicle specifications."
+        },
+        "verificationStatus": {
+          "type": "string",
+          "enum": ["UNVERIFIED_USER_DATA", "DEMO_DATA_UNVERIFIED", "AI_EXTRACTED_UNVERIFIED"],
+          "description": "Verification status; demonstration, AI-extracted, and user data are never marked OEM-verified."
+        },
+        "unknownFields": {
+          "type": "array",
+          "description": "List of specification field keys explicitly marked unknown or unavailable."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated creation timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated update timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "manufacturer",
+        "model",
+        "modelYear",
+        "trim",
+        "bodyStyle",
+        "engineType",
+        "transmission",
+        "fuelType",
+        "mileage",
+        "mileageUnit",
+        "market",
+        "primary",
+        "specSource",
+        "verificationStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "VehicleDiagnosisLog": {
+      "title": "VehicleDiagnosisLog",
+      "description": "Persisted car problem consultation log created from AI mechanic chat for a specific registered vehicle.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the vehicle owner."
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "Parent vehicle document ID."
+        },
+        "userPrompt": {
+          "type": "string",
+          "description": "Plain-language symptom or question entered by the owner."
+        },
+        "aiSummary": {
+          "type": "string",
+          "description": "Kid-simple AI explanation summary of the car problem."
+        },
+        "attachmentType": {
+          "type": "string",
+          "enum": ["TEXT_ONLY", "PHOTO", "FILE", "AUDIO"],
+          "description": "Type of media attached during the AI consultation."
+        },
+        "attachmentLabel": {
+          "type": "string",
+          "description": "Optional filename or short label describing attached photo, file, or audio duration."
+        },
+        "modelCommonality": {
+          "type": "string",
+          "description": "How common this symptom is on the owner's car model."
+        },
+        "followUpQuestion": {
+          "type": "string",
+          "description": "Clarifying follow-up question asked by AI (such as sound location)."
+        },
+        "resolved": {
+          "type": "boolean",
+          "description": "Whether the owner marked this car issue as resolved."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated creation timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated update timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "vehicleId",
+        "userPrompt",
+        "aiSummary",
+        "attachmentType",
+        "resolved",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SavedObdSessionRecord": {
+      "title": "SavedObdSessionRecord",
+      "description": "Persisted read-only OBD-II diagnostic session summary, findings, and technician report for a registered vehicle.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the vehicle owner."
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "Parent vehicle document ID."
+        },
+        "vehicleTitle": {
+          "type": "string",
+          "description": "Display title of the vehicle at scan time."
+        },
+        "sourceType": {
+          "type": "string",
+          "enum": ["USB_OBD", "BLUETOOTH_OBD", "MANUAL_DTC_ENTRY", "IMPORTED_LOG"],
+          "description": "Source of the diagnostic session."
+        },
+        "adapterOrFileLabel": {
+          "type": "string",
+          "description": "Adapter name, imported filename, or manual entry label."
+        },
+        "reliabilityLevel": {
+          "type": "string",
+          "enum": ["HIGH_VERIFIED_HARDWARE", "MODERATE_PARTIAL_DATA", "LOW_MANUAL_OR_UNVERIFIED", "UNVERIFIED_INSUFFICIENT"],
+          "description": "Reliability rating of the captured diagnostic evidence."
+        },
+        "overallUrgency": {
+          "type": "string",
+          "enum": ["Information", "Monitor", "Service Recommended", "Urgent"],
+          "description": "Overall safety/service urgency rating."
+        },
+        "confidenceLevel": {
+          "type": "string",
+          "enum": ["High", "Moderate", "Low", "Insufficient"],
+          "description": "Confidence level across session findings."
+        },
+        "ownerSymptoms": {
+          "type": "string",
+          "description": "Optional symptoms recorded by the vehicle owner."
+        },
+        "headlineSummary": {
+          "type": "string",
+          "description": "Everyday language summary of the diagnostic findings."
+        },
+        "driveabilityNotice": {
+          "type": "string",
+          "description": "Safety and driveability disclaimer notice."
+        },
+        "dtcCodes": {
+          "type": "array",
+          "description": "List of normalized OBD-II trouble codes associated with the session."
+        },
+        "findingTitles": {
+          "type": "array",
+          "description": "Titles of diagnostic findings generated by the engine."
+        },
+        "telemetrySummary": {
+          "type": "array",
+          "description": "Formatted PID sensor readings (with unavailable values marked Unavailable)."
+        },
+        "missingInformation": {
+          "type": "array",
+          "description": "Explicitly listed missing sensors or vehicle context."
+        },
+        "mechanicChecklist": {
+          "type": "array",
+          "description": "Actionable handoff verification points for a qualified technician."
+        },
+        "reportPlainText": {
+          "type": "string",
+          "description": "Formatted technician handoff report text."
+        },
+        "readOnlyVerified": {
+          "type": "boolean",
+          "description": "Confirms strict read-only OBD-II enforcement."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated creation timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated update timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "vehicleId",
+        "vehicleTitle",
+        "sourceType",
+        "adapterOrFileLabel",
+        "reliabilityLevel",
+        "overallUrgency",
+        "confidenceLevel",
+        "headlineSummary",
+        "reportPlainText",
+        "readOnlyVerified",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private owner profile document isolated per authenticated Firebase user."
+    },
+    "/users/{userId}/vehicles/{vehicleId}": {
+      "schema": {
+        "$ref": "#/entities/Vehicle"
+      },
+      "description": "Owner-isolated subcollection of registered vehicles belonging to {userId}."
+    },
+    "/users/{userId}/vehicles/{vehicleId}/diagnosisLogs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/VehicleDiagnosisLog"
+      },
+      "description": "Owner-isolated history log of AI car problem Q&As and audio/photo/file checks per vehicle."
+    },
+    "/users/{userId}/vehicles/{vehicleId}/obdSessions/{sessionId}": {
+      "schema": {
+        "$ref": "#/entities/SavedObdSessionRecord"
+      },
+      "description": "Owner-isolated history of read-only OBD-II scans, manual DTC checks, imported logs, and mechanic reports per vehicle."
+    }
+  }
+}

@@ -1,0 +1,309 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.displayName is string &&
+             data.displayName.size() <= 100 &&
+             (!('preferredMarket' in data) || (data.preferredMarket is string && data.preferredMarket.size() <= 64)) &&
+             (!('preferredMileageUnit' in data) || (data.preferredMileageUnit in ['km', 'mi'])) &&
+             (!('primaryVehicleId' in data) || (data.primaryVehicleId is string && data.primaryVehicleId.size() <= 128)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidVehicle(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.manufacturer is string &&
+             data.manufacturer.size() >= 1 &&
+             data.manufacturer.size() <= 80 &&
+             data.model is string &&
+             data.model.size() >= 1 &&
+             data.model.size() <= 80 &&
+             data.modelYear is int &&
+             data.modelYear >= 1886 &&
+             data.modelYear <= 2028 &&
+             data.trim is string &&
+             data.trim.size() >= 1 &&
+             data.trim.size() <= 100 &&
+             data.bodyStyle in ['CROSSOVER', 'SEDAN', 'COUPE', 'HATCHBACK', 'SUV', 'TRUCK', 'WAGON'] &&
+             data.engineType is string &&
+             data.engineType.size() >= 1 &&
+             data.engineType.size() <= 80 &&
+             (!('engineDisplacement' in data) || (data.engineDisplacement is string && data.engineDisplacement.size() <= 40)) &&
+             data.transmission is string &&
+             data.transmission.size() >= 1 &&
+             data.transmission.size() <= 80 &&
+             data.fuelType is string &&
+             data.fuelType.size() >= 1 &&
+             data.fuelType.size() <= 60 &&
+             data.mileage is int &&
+             data.mileage >= 0 &&
+             data.mileage <= 9999999 &&
+             data.mileageUnit in ['km', 'mi'] &&
+             data.market is string &&
+             data.market.size() >= 1 &&
+             data.market.size() <= 64 &&
+             (!('photoUri' in data) || (data.photoUri is string && data.photoUri.size() <= 1000)) &&
+             (!('anglePhotos' in data) || (
+               data.anglePhotos is map &&
+               data.anglePhotos.keys().hasOnly(['FRONT', 'SIDE_LEFT', 'REAR', 'SIDE_RIGHT'])
+             )) &&
+             (!('aiInspectionSummary' in data) || (data.aiInspectionSummary is string && data.aiInspectionSummary.size() <= 600)) &&
+             data.primary is bool &&
+             data.specSource in ['USER_ENTERED', 'DEMO_CATALOG_PREFILL', 'AI_VISION_PREFILL'] &&
+             data.verificationStatus in ['UNVERIFIED_USER_DATA', 'DEMO_DATA_UNVERIFIED', 'AI_EXTRACTED_UNVERIFIED'] &&
+             (!('unknownFields' in data) || (
+               data.unknownFields is list &&
+               data.unknownFields.size() <= 10 &&
+               (data.unknownFields.size() == 0 || data.unknownFields[0] is string)
+             )) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isVehicleProfileEditAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly([
+        'manufacturer',
+        'model',
+        'modelYear',
+        'trim',
+        'bodyStyle',
+        'engineType',
+        'engineDisplacement',
+        'transmission',
+        'fuelType',
+        'mileage',
+        'mileageUnit',
+        'market',
+        'photoUri',
+        'anglePhotos',
+        'aiInspectionSummary',
+        'primary',
+        'specSource',
+        'verificationStatus',
+        'unknownFields',
+        'updatedAt'
+      ]);
+    }
+
+    function isVehicleSetPrimaryAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly(['primary', 'updatedAt']);
+    }
+
+    function isVehicleMileageUpdateAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly(['mileage', 'mileageUnit', 'updatedAt']);
+    }
+
+    function isVehiclePhotoUpdateAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly(['photoUri', 'updatedAt']);
+    }
+
+    function isVehicleStudioUpdateAction() {
+      return incoming().diff(existing()).affectedKeys().hasOnly(['anglePhotos', 'photoUri', 'aiInspectionSummary', 'updatedAt']);
+    }
+
+    function isValidDiagnosisLog(data, userId, vehicleId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.vehicleId is string &&
+             data.vehicleId == vehicleId &&
+             data.userPrompt is string &&
+             data.userPrompt.size() >= 1 &&
+             data.userPrompt.size() <= 800 &&
+             data.aiSummary is string &&
+             data.aiSummary.size() >= 1 &&
+             data.aiSummary.size() <= 1600 &&
+             data.attachmentType in ['TEXT_ONLY', 'PHOTO', 'FILE', 'AUDIO'] &&
+             (!('attachmentLabel' in data) || (data.attachmentLabel is string && data.attachmentLabel.size() <= 120)) &&
+             (!('modelCommonality' in data) || (data.modelCommonality is string && data.modelCommonality.size() <= 80)) &&
+             (!('followUpQuestion' in data) || (data.followUpQuestion is string && data.followUpQuestion.size() <= 300)) &&
+             data.resolved is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidObdSession(data, userId, vehicleId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.vehicleId is string &&
+             data.vehicleId == vehicleId &&
+             data.vehicleTitle is string &&
+             data.vehicleTitle.size() >= 1 &&
+             data.vehicleTitle.size() <= 120 &&
+             data.sourceType in ['USB_OBD', 'BLUETOOTH_OBD', 'MANUAL_DTC_ENTRY', 'IMPORTED_LOG'] &&
+             data.adapterOrFileLabel is string &&
+             data.adapterOrFileLabel.size() >= 1 &&
+             data.adapterOrFileLabel.size() <= 140 &&
+             data.reliabilityLevel in ['HIGH_VERIFIED_HARDWARE', 'MODERATE_PARTIAL_DATA', 'LOW_MANUAL_OR_UNVERIFIED', 'UNVERIFIED_INSUFFICIENT'] &&
+             data.overallUrgency in ['Information', 'Monitor', 'Service Recommended', 'Urgent'] &&
+             data.confidenceLevel in ['High', 'Moderate', 'Low', 'Insufficient'] &&
+             (!('ownerSymptoms' in data) || (data.ownerSymptoms is string && data.ownerSymptoms.size() <= 800)) &&
+             data.headlineSummary is string &&
+             data.headlineSummary.size() >= 1 &&
+             data.headlineSummary.size() <= 1200 &&
+             (!('driveabilityNotice' in data) || (data.driveabilityNotice is string && data.driveabilityNotice.size() <= 500)) &&
+             (!('dtcCodes' in data) || (data.dtcCodes is list && data.dtcCodes.size() <= 20)) &&
+             (!('findingTitles' in data) || (data.findingTitles is list && data.findingTitles.size() <= 15)) &&
+             (!('telemetrySummary' in data) || (data.telemetrySummary is list && data.telemetrySummary.size() <= 25)) &&
+             (!('missingInformation' in data) || (data.missingInformation is list && data.missingInformation.size() <= 15)) &&
+             (!('mechanicChecklist' in data) || (data.mechanicChecklist is list && data.mechanicChecklist.size() <= 20)) &&
+             data.reportPlainText is string &&
+             data.reportPlainText.size() >= 1 &&
+             data.reportPlainText.size() <= 8000 &&
+             data.readOnlyVerified == true &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'preferredMarket', 'preferredMileageUnit', 'primaryVehicleId', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'preferredMarket', 'preferredMileageUnit', 'primaryVehicleId', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'preferredMarket', 'preferredMileageUnit', 'primaryVehicleId', 'updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /vehicles/{vehicleId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(vehicleId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'manufacturer', 'model', 'modelYear', 'trim', 'bodyStyle',
+                           'engineType', 'transmission', 'fuelType', 'mileage', 'mileageUnit',
+                           'market', 'primary', 'specSource', 'verificationStatus',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'manufacturer', 'model', 'modelYear', 'trim', 'bodyStyle',
+                           'engineType', 'engineDisplacement', 'transmission', 'fuelType',
+                           'mileage', 'mileageUnit', 'market', 'photoUri', 'anglePhotos',
+                           'aiInspectionSummary', 'primary', 'specSource', 'verificationStatus',
+                           'unknownFields', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidVehicle(incoming(), userId);
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(vehicleId) &&
+                         isValidVehicle(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().keys().hasOnly([
+                           'userId', 'manufacturer', 'model', 'modelYear', 'trim', 'bodyStyle',
+                           'engineType', 'engineDisplacement', 'transmission', 'fuelType',
+                           'mileage', 'mileageUnit', 'market', 'photoUri', 'anglePhotos',
+                           'aiInspectionSummary', 'primary', 'specSource', 'verificationStatus',
+                           'unknownFields', 'createdAt', 'updatedAt'
+                         ]) && (
+                           isVehicleSetPrimaryAction() ||
+                           isVehicleMileageUpdateAction() ||
+                           isVehiclePhotoUpdateAction() ||
+                           isVehicleStudioUpdateAction() ||
+                           isVehicleProfileEditAction()
+                         );
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
+
+        match /diagnosisLogs/{logId} {
+          allow get: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId) && isValidId(logId);
+          allow list: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
+          allow create: if isOwner(userId) &&
+                           isValidId(userId) &&
+                           isValidId(vehicleId) &&
+                           isValidId(logId) &&
+                           incoming().keys().hasAll([
+                             'userId', 'vehicleId', 'userPrompt', 'aiSummary',
+                             'attachmentType', 'resolved', 'createdAt', 'updatedAt'
+                           ]) &&
+                           incoming().keys().hasOnly([
+                             'userId', 'vehicleId', 'userPrompt', 'aiSummary',
+                             'attachmentType', 'attachmentLabel', 'modelCommonality',
+                             'followUpQuestion', 'resolved', 'createdAt', 'updatedAt'
+                           ]) &&
+                           isValidDiagnosisLog(incoming(), userId, vehicleId);
+          allow update: if isOwner(userId) &&
+                           isValidId(userId) &&
+                           isValidId(vehicleId) &&
+                           isValidId(logId) &&
+                           isValidDiagnosisLog(incoming(), userId, vehicleId) &&
+                           incoming().userId == existing().userId &&
+                           incoming().vehicleId == existing().vehicleId &&
+                           incoming().createdAt == existing().createdAt &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['resolved', 'updatedAt']);
+          allow delete: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId) && isValidId(logId);
+        }
+
+        match /obdSessions/{sessionId} {
+          allow get: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId) && isValidId(sessionId);
+          allow list: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
+          allow create: if isOwner(userId) &&
+                           isValidId(userId) &&
+                           isValidId(vehicleId) &&
+                           isValidId(sessionId) &&
+                           incoming().keys().hasAll([
+                             'userId', 'vehicleId', 'vehicleTitle', 'sourceType',
+                             'adapterOrFileLabel', 'reliabilityLevel', 'overallUrgency',
+                             'confidenceLevel', 'headlineSummary', 'reportPlainText',
+                             'readOnlyVerified', 'createdAt', 'updatedAt'
+                           ]) &&
+                           incoming().keys().hasOnly([
+                             'userId', 'vehicleId', 'vehicleTitle', 'sourceType',
+                             'adapterOrFileLabel', 'reliabilityLevel', 'overallUrgency',
+                             'confidenceLevel', 'ownerSymptoms', 'headlineSummary',
+                             'driveabilityNotice', 'dtcCodes', 'findingTitles',
+                             'telemetrySummary', 'missingInformation', 'mechanicChecklist',
+                             'reportPlainText', 'readOnlyVerified', 'createdAt', 'updatedAt'
+                           ]) &&
+                           isValidObdSession(incoming(), userId, vehicleId);
+          allow update: if false;
+          allow delete: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId) && isValidId(sessionId);
+        }
+      }
+    }
+  }
+}
